@@ -3,6 +3,9 @@
 Managers need to see who is over-committed before the week starts, not after. This is a
 small slice of that: allocation against capacity, per person, per week.
 
+This capacity view will be one component of a team overview page, alongside a timeline
+of the team's logged time. For this assignment, build only the capacity view.
+
 Budget about ninety minutes. The scaffold runs already — `make up` gives you a working
 database, a working API, and a working dev server. Three things are stubbed out and yours
 to build.
@@ -43,7 +46,8 @@ make psql   # open a Postgres shell
 1. **`GET /api/capacity?from=&to=`** in `api/capacity.go` — for every person and every
    week in the range, how many hours they're allocated and how much capacity they have.
 2. **`CapacityGrid`** in `web/src/CapacityGrid.tsx` — people down the side, weeks across
-   the top, over-allocation obvious at a glance.
+   the top, over-allocation obvious at a glance. Users should be able to navigate
+   backward and forward by week and choose a date range from the UI.
 3. **Editing capacity** — a manager can change someone's weekly hours from the grid.
    `PATCH /api/people/{id}` is stubbed in `api/people.go`. After saving, the numbers
    on screen must be correct without a full page reload — how they get there (refetch
@@ -80,7 +84,9 @@ Then fill in `DECISIONS.md` — it's short, and it's the first thing we read.
 We spend about ten minutes per submission, on:
 
 - `DECISIONS.md`, in your words
+- `.notes/worklog.md`, including decisions or verification that did not make the final summary
 - The running grid, and whether the numbers hold up
+- The API and query design, and how the view behaves after an edit
 - The diff, as a piece of code someone else has to maintain
 - Your commit history
 
