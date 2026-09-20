@@ -32,7 +32,7 @@ day_alloc AS (
 )
 SELECT person_id,
        week_start::text AS week,
-       round(sum(hours_per_day), 3)::float8 AS allocated
+       sum(hours_per_day)::float8 AS allocated
 FROM day_alloc
 GROUP BY person_id, week_start
 ORDER BY person_id, week_start`
