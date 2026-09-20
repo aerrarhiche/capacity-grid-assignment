@@ -7,7 +7,7 @@ date range, with over-allocation obvious and weekly hours editable in place.
 
 - [x] `GET /api/capacity?from=&to=` in `api/capacity.go`
 - [x] `CapacityGrid` in `web/src/CapacityGrid.tsx`
-- [ ] `PATCH /api/people/{id}` in `api/people.go`
+- [x] `PATCH /api/people/{id}` in `api/people.go`
 
 ## Current state
 
@@ -30,7 +30,7 @@ date range, with over-allocation obvious and weekly hours editable in place.
 
 - [x] Phase 1: decide the contract, then implement `handleCapacity` with SQL aggregation.
 - [x] Phase 2: build the grid, week navigation, and date range selection.
-- [ ] Phase 3: implement `handleUpdatePerson` and post edit consistency.
+- [x] Phase 3: implement `handleUpdatePerson` and post edit consistency.
 - [ ] Phase 4: rebuild, run, and verify the numbers against the raw data.
 
 ## Validation

@@ -97,7 +97,63 @@ thead th.person-col {
   display: block;
   font-size: 0.75rem;
   font-weight: normal;
-  opacity: 0.6;
+  background: none;
+  border: none;
+  border-bottom: 1px dashed color-mix(in srgb, currentColor 45%, transparent);
+  padding: 0 0 1px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.capacity:hover {
+  border-bottom-style: solid;
+}
+
+.edit-hint {
+  display: inline-block;
+  margin-left: 0.3rem;
+  opacity: 0.45;
+  vertical-align: -1px;
+}
+
+.capacity:hover .edit-hint {
+  opacity: 0.9;
+}
+
+.capacity-input {
+  display: block;
+  font: inherit;
+  font-size: 0.8rem;
+  width: 5rem;
+  padding: 0.15rem 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+
+.legend-swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 2px;
+  background: color-mix(in srgb, #e5484d 30%, transparent);
+  border: 1px solid #e5484d;
+}
+
+tbody tr:hover > td:not(.over) {
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+tbody tr:hover > th.person-col {
+  background: color-mix(in srgb, currentColor 6%, Canvas);
 }
 
 .over {

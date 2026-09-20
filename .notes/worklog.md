@@ -5,6 +5,13 @@ left unfinished. Append as you go; a line or two per entry is right.
 
 ---
 
+## Phase 3 (edit weekly hours)
+
+- `PATCH /api/people/{id}` updates `weekly_hours`, requires a non-negative `weeklyHours` in the JSON body, returns the updated person. Bad id or body is 400, unknown person is 404.
+- Grid editing: click the "Xh/wk" text in the person column, type a number, Enter or blur saves, Escape cancels.
+- After a save the grid patches that person's `weeklyHours` in local state, so over-allocation re-highlights in place. Chose local patch over a full refetch or optimistic update: allocations do not depend on weekly hours, so patching is exact and avoids a refetch.
+- Verified through both :8080 and the :3000 proxy, all error cases, and that a change shows up in `/api/capacity`; restored the data afterward.
+
 ## Phase 2 (grid)
 
 - Grid now owns its range state; `App.tsx` is a thin shell. Week nav buttons shift the window by 7 days; date inputs jump to any range.
