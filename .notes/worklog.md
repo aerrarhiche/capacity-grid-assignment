@@ -5,6 +5,14 @@ left unfinished. Append as you go; a line or two per entry is right.
 
 ---
 
+## Phase 2 (grid)
+
+- Grid now owns its range state; `App.tsx` is a thin shell. Week nav buttons shift the window by 7 days; date inputs jump to any range.
+- Cells show "allocated / capacity" and over-allocation (alloc > weeklyHours) is highlighted red. A zero-capacity person with any allocation counts as over.
+- Sticky header and sticky first column keep the 500-row table usable.
+- Kept the original Dec 29 - Jan 16 default window: it shows the hand-crafted edge cases and real over-allocation.
+- Backend tweak: dropped `round(...,3)` on allocations. Probed all person-week groups and every total is already a multiple of 1/8, so rounding was a no-op that read like a precision bug; now returns exact `float8`.
+
 ## Phase 1 (capacity endpoint)
 
 - Probed the data before deciding anything. Seed is 500 people and ~126k assignments across 19 months (2025-06-02 to 2026-12-21). The first 10 rows are hand-crafted edge cases (partial weeks, weekend straddling, a zero-capacity person); the rest is a full synthetic dataset.
