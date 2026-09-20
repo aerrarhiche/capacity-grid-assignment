@@ -10,6 +10,13 @@ left unfinished. Append as you go; a line or two per entry is right.
 - Fresh rebuild (`docker compose down -v` then `up --build`) verified: health returns 500 people, capacity spot-check matches, PATCH round-trips and reflects in capacity, web and proxy both serve 200.
 - Wrote `DECISIONS.md`.
 
+## Frontend redesign (after Phase 4)
+
+- Restyled the web app: calm background, centered layout, a header with title and subtitle, and a white card holding the grid.
+- Toolbar now has a segmented week nav, styled date inputs, and a live "N people over-allocated" summary with the number in red.
+- Table uses light row separators, right-aligned numbers, a sticky header and name column, and red highlighting on over-allocated cells. Added dark mode via `prefers-color-scheme`.
+- Added a search bar that filters people by name (case-insensitive).
+
 ## Phase 3 (edit weekly hours)
 
 - `PATCH /api/people/{id}` updates `weekly_hours`, requires a non-negative `weeklyHours` in the JSON body, returns the updated person. Bad id or body is 400, unknown person is 404.

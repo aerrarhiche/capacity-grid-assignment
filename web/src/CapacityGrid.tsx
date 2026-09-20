@@ -48,6 +48,7 @@ export function CapacityGrid() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<PendingEdit | null>(null)
+  const [query, setQuery] = useState('')
 
   const cancelledRef = useRef(false)
   const savingRef = useRef(false)
@@ -138,15 +139,26 @@ export function CapacityGrid() {
       })
   }
 
+  const overCount = data
+    ? data.people.filter((p) => p.allocations.some((a) => a > p.weeklyHours)).length
+    : 0
+
+  const trimmedQuery = query.trim().toLowerCase()
+  const visiblePeople = data
+    ? data.people.filter((p) => p.name.toLowerCase().includes(trimmedQuery))
+    : []
+
   return (
-    <div>
+    <div className="card">
       <div className="toolbar">
-        <button type="button" onClick={() => shift(-1)} aria-label="Previous week">
-          ‹
-        </button>
-        <button type="button" onClick={() => shift(1)} aria-label="Next week">
-          ›
-        </button>
+        <div className="week-nav">
+          <button type="button" onClick={() => shift(-1)} aria-label="Previous week">
+            ‹
+          </button>
+          <button type="button" onClick={() => shift(1)} aria-label="Next week">
+            ›
+          </button>
+        </div>
         <label>
           From
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
@@ -155,15 +167,28 @@ export function CapacityGrid() {
           To
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </label>
-        <span className="legend">
-          <span className="legend-swatch" aria-hidden="true" />
-          over-allocated
-        </span>
+        <input
+          type="search"
+          className="search"
+          placeholder="Search by name"
+          aria-label="Search by name"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        {data && (
+          <span className="summary">
+            <strong>{overCount}</strong> {overCount === 1 ? 'person' : 'people'} over-allocated
+          </span>
+        )}
       </div>
 
       {invalidRange && <p className="error">From must be on or before To.</p>}
       {error && <p className="error">{error}</p>}
       {loading && <p className="muted">Loading…</p>}
+
+      {data && !loading && trimmedQuery !== '' && visiblePeople.length === 0 && (
+        <p className="muted">No people match "{query}".</p>
+      )}
 
       {data && !loading && (
         <div className="table-scroll">
@@ -179,7 +204,7 @@ export function CapacityGrid() {
               </tr>
             </thead>
             <tbody>
-              {data.people.map((p) => {
+              {visiblePeople.map((p) => {
                 const editValue = editing && editing.id === p.id ? editing.value : null
                 return (
                   <tr key={p.id}>
@@ -231,7 +256,8 @@ export function CapacityGrid() {
                       const over = alloc > p.weeklyHours
                       return (
                         <td key={i} className={over ? 'over' : undefined}>
-                          {fmtHours(alloc)} / {fmtHours(p.weeklyHours)}
+                          <span className="alloc">{fmtHours(alloc)}</span>
+                          <span className="cap"> / {fmtHours(p.weeklyHours)}</span>
                         </td>
                       )
                     })}

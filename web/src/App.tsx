@@ -2,9 +2,12 @@ import { CapacityGrid } from './CapacityGrid'
 
 export function App() {
   return (
-    <main>
-      <h1>Team capacity</h1>
+    <div className="page">
+      <header className="page-header">
+        <h1>Team capacity</h1>
+        <p className="subtitle">Allocated hours against capacity, week by week.</p>
+      </header>
       <CapacityGrid />
-    </main>
+    </div>
   )
 }
