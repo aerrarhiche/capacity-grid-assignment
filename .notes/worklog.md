@@ -5,6 +5,11 @@ left unfinished. Append as you go; a line or two per entry is right.
 
 ---
 
+## Phase 4 (final pass)
+
+- Fresh rebuild (`docker compose down -v` then `up --build`) verified: health returns 500 people, capacity spot-check matches, PATCH round-trips and reflects in capacity, web and proxy both serve 200.
+- Wrote `DECISIONS.md`.
+
 ## Phase 3 (edit weekly hours)
 
 - `PATCH /api/people/{id}` updates `weekly_hours`, requires a non-negative `weeklyHours` in the JSON body, returns the updated person. Bad id or body is 400, unknown person is 404.

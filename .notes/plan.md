@@ -31,7 +31,7 @@ date range, with over-allocation obvious and weekly hours editable in place.
 - [x] Phase 1: decide the contract, then implement `handleCapacity` with SQL aggregation.
 - [x] Phase 2: build the grid, week navigation, and date range selection.
 - [x] Phase 3: implement `handleUpdatePerson` and post edit consistency.
-- [ ] Phase 4: rebuild, run, and verify the numbers against the raw data.
+- [x] Phase 4: rebuild, run, and verify the numbers against the raw data.
 
 ## Validation
 
@@ -47,6 +47,6 @@ date range, with over-allocation obvious and weekly hours editable in place.
 
 ## Submission
 
-- [ ] Push to a public GitHub repo on aerrarhiche.
-- [ ] Write `DECISIONS.md` (human voice, no em dashes).
+- [x] Push to a public GitHub repo on aerrarhiche.
+- [x] Write `DECISIONS.md` (human voice, no em dashes).
 - [ ] Submit the repo link.
