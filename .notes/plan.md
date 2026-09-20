@@ -49,4 +49,4 @@ date range, with over-allocation obvious and weekly hours editable in place.
 
 - [x] Push to a public GitHub repo on aerrarhiche.
 - [x] Write `DECISIONS.md` (human voice, no em dashes).
-- [ ] Submit the repo link.
+- [x] Submit the repo link.
