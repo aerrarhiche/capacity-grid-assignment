@@ -139,14 +139,12 @@ export function CapacityGrid() {
       })
   }
 
-  const overCount = data
-    ? data.people.filter((p) => p.allocations.some((a) => a > p.weeklyHours)).length
-    : 0
-
   const trimmedQuery = query.trim().toLowerCase()
   const visiblePeople = data
     ? data.people.filter((p) => p.name.toLowerCase().includes(trimmedQuery))
     : []
+
+  const overCount = visiblePeople.filter((p) => p.allocations.some((a) => a > p.weeklyHours)).length
 
   return (
     <div className="card">
