@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { addDays, fmtHours, isOverAllocated, matchesQuery, parseWeeklyHours, weekLabel } from './capacity'
 
 type Person = {
   id: number
@@ -29,23 +30,6 @@ type SaveJob = {
 // straddling, a zero-capacity person) and some over-allocation.
 const DEFAULT_FROM = '2025-12-29'
 const DEFAULT_TO = '2026-01-16'
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-function addDays(iso: string, days: number): string {
-  const d = new Date(`${iso}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + days)
-  return d.toISOString().slice(0, 10)
-}
-
-function weekLabel(iso: string): string {
-  const d = new Date(`${iso}T00:00:00Z`)
-  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`
-}
-
-function fmtHours(n: number): string {
-  return String(Number(n.toFixed(4)))
-}
 
 export function CapacityGrid() {
   const [from, setFrom] = useState(DEFAULT_FROM)
@@ -114,13 +98,14 @@ export function CapacityGrid() {
   // whether the edit was accepted, so the caller can decide what to do with the
   // editor.
   const saveEdit = (id: number, value: string): boolean => {
-    const val = Number(value)
-    if (value.trim() === '' || !Number.isFinite(val) || val < 0) {
+    const hours = parseWeeklyHours(value)
+    if (hours === null) {
       setError('Weekly hours must be a non-negative number.')
       return false
     }
 
-    queueRef.current.push({ id, hours: val })
+    setError(null)
+    queueRef.current.push({ id, hours })
     drainQueue()
     return true
   }
@@ -169,11 +154,9 @@ export function CapacityGrid() {
   }
 
   const trimmedQuery = query.trim().toLowerCase()
-  const visiblePeople = data
-    ? data.people.filter((p) => p.name.toLowerCase().includes(trimmedQuery))
-    : []
+  const visiblePeople = data ? data.people.filter((p) => matchesQuery(p.name, query)) : []
 
-  const overCount = visiblePeople.filter((p) => p.allocations.some((a) => a > p.weeklyHours)).length
+  const overCount = visiblePeople.filter((p) => isOverAllocated(p.allocations, p.weeklyHours)).length
 
   return (
     <div className="card">
