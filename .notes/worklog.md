@@ -5,6 +5,31 @@ left unfinished. Append as you go; a line or two per entry is right.
 
 ---
 
+## Robustness pass (after review feedback)
+
+A reviewer went through the grid and found problems in how it behaves outside the happy
+path. This section records what they found and what I changed.
+
+- Second edit while a save is in flight was silently dropped. The old code had a guard that
+  returned early if a save was running, so a fast manager lost the second change with no
+  message. Now saves go through a queue that drains one at a time, so a queued edit is sent
+  instead of dropped.
+- A very wide date range rendered every week for every person and could crash the tab. Added
+  a cap of 730 days on the backend (`rangeAllowed` in `api/capacity.go`), which returns 400
+  past that. The frontend shows the message it gets back.
+- An error banner stayed on screen after a later successful save. The save path now clears
+  the error when it succeeds.
+- A failed refresh left the old grid visible under the new dates. The capacity effect now
+  clears `data` on failure, so an error is never shown above numbers from a different range.
+- Accessibility: the editor input had no accessible name, and the table had no caption. Added
+  `aria-label` on the input (includes the person's name) and a visually hidden `<caption>`.
+- Added Go tests (`api/capacity_test.go`): week start calculation across every weekday,
+  Monday alignment, seven day spacing, the range cap boundaries, the query invariants that
+  keep the weekday filter, and the `PATCH` validation cases.
+
+Still not done, and worth naming: there are no frontend tests, and the save queue gives no
+visual sign that a save is waiting.
+
 ## Phase 4 (final pass)
 
 - Fresh rebuild (`docker compose down -v` then `up --build`) verified: health returns 500 people, capacity spot-check matches, PATCH round-trips and reflects in capacity, web and proxy both serve 200.
