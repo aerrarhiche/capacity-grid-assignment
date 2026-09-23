@@ -26,9 +26,17 @@ path. This section records what they found and what I changed.
 - Added Go tests (`api/capacity_test.go`): week start calculation across every weekday,
   Monday alignment, seven day spacing, the range cap boundaries, the query invariants that
   keep the weekday filter, and the `PATCH` validation cases.
+- Added frontend tests (Vitest and Testing Library). `web/src/capacity.test.ts` covers the
+  pure helpers (date math, formatting, parsing, the name match, the over-allocation check)
+  and `web/src/CapacityGrid.test.tsx` renders the grid and drives it: range requests, week
+  navigation, the search filter, opening and saving an edit, Escape to cancel, invalid input,
+  a failed save, a failed range request, and a second edit queued while the first is in
+  flight. 61 tests in total.
+- Pulled the pure helpers out of the component into `web/src/capacity.ts` so they can be
+  tested without rendering.
 
-Still not done, and worth naming: there are no frontend tests, and the save queue gives no
-visual sign that a save is waiting.
+Still not done, and worth naming: the save queue gives no visual sign that a save is waiting
+for one already in flight.
 
 ## Phase 4 (final pass)
 

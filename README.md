@@ -41,6 +41,18 @@ make logs   # follow API logs
 make psql   # open a Postgres shell
 ```
 
+## Tests
+
+Both sides have tests. With the stack running:
+
+```bash
+# Go: week calculation, the range cap, the query invariants, PATCH validation
+docker compose run --rm --no-deps -v "$(pwd)/api:/src" -w /src api go test ./...
+
+# Frontend: the grid, editing, and the failure paths
+docker compose exec -T web npx vitest run
+```
+
 ## What to build
 
 1. **`GET /api/capacity?from=&to=`** in `api/capacity.go` — for every person and every
