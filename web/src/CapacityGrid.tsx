@@ -26,10 +26,17 @@ type SaveJob = {
   hours: number
 }
 
-// A window that shows the hand-crafted edge cases (partial weeks, weekend
-// straddling, a zero-capacity person) and some over-allocation.
+// A window that shows the hand-crafted edge cases (partial weeks,
+// weekend straddling, a zero-capacity person) and some over-allocation.
 const DEFAULT_FROM = '2025-12-29'
 const DEFAULT_TO = '2026-01-16'
+
+// A save against a local API finishes in a few milliseconds, so showing the
+// saving indicator straight away makes it flash and look like a glitch. Waiting
+// a moment before showing it means a fast save shows nothing at all, and once it
+// does appear it stays long enough to read.
+const SAVING_INDICATOR_DELAY_MS = 400
+const SAVING_INDICATOR_MIN_MS = 500
 
 export function CapacityGrid() {
   const [from, setFrom] = useState(DEFAULT_FROM)
@@ -43,8 +50,16 @@ export function CapacityGrid() {
   // Counts saves that have been queued but not finished. Drives the saving
   // indicator, so a slow save is visible instead of silent.
   const [pendingSaves, setPendingSaves] = useState(0)
+  const [showSaving, setShowSaving] = useState(false)
 
   const cancelledRef = useRef(false)
+
+  // Timers for the saving indicator's show delay and minimum visible time.
+  const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const shownAtRef = useRef(0)
+  // Mirrors showSaving so the save callbacks can read it without going stale.
+  const visibleRef = useRef(false)
 
   // Saves run one at a time. A second edit made while a save is still in flight
   // is queued here instead of being dropped, so a fast manager never loses a
@@ -53,6 +68,58 @@ export function CapacityGrid() {
   const savingRef = useRef(false)
 
   const invalidRange = from > to
+
+  // clearSaveTimers cancels any pending show or hide, so a stale timer can never
+  // turn the indicator on after the work has finished.
+  const clearSaveTimers = () => {
+    if (showTimerRef.current !== null) {
+      clearTimeout(showTimerRef.current)
+      showTimerRef.current = null
+    }
+    if (hideTimerRef.current !== null) {
+      clearTimeout(hideTimerRef.current)
+      hideTimerRef.current = null
+    }
+  }
+
+  // The indicator only appears if the save is still running after the delay, and
+  // once it is on it stays for at least the minimum so it does not blink.
+  const beginSaving = () => {
+    if (visibleRef.current) return
+    // A hide is already scheduled, so the indicator is on its way out. Cancel it
+    // rather than waiting for it, since more work has arrived.
+    if (hideTimerRef.current !== null) {
+      clearTimeout(hideTimerRef.current)
+      hideTimerRef.current = null
+    }
+    if (showTimerRef.current !== null) return
+    showTimerRef.current = setTimeout(() => {
+      showTimerRef.current = null
+      shownAtRef.current = Date.now()
+      visibleRef.current = true
+      setShowSaving(true)
+    }, SAVING_INDICATOR_DELAY_MS)
+  }
+
+  const endSaving = () => {
+    if (showTimerRef.current !== null) {
+      // It never became visible, so there is nothing to hide or smooth over.
+      clearTimeout(showTimerRef.current)
+      showTimerRef.current = null
+      return
+    }
+    if (!visibleRef.current) return
+    const visibleFor = Date.now() - shownAtRef.current
+    const remaining = Math.max(0, SAVING_INDICATOR_MIN_MS - visibleFor)
+    hideTimerRef.current = setTimeout(() => {
+      hideTimerRef.current = null
+      visibleRef.current = false
+      setShowSaving(false)
+    }, remaining)
+  }
+
+  // Timers outlive a component that goes away, so clean them up.
+  useEffect(() => clearSaveTimers, [])
 
   useEffect(() => {
     if (invalidRange) {
@@ -111,6 +178,7 @@ export function CapacityGrid() {
     setError(null)
     queueRef.current.push({ id, hours })
     setPendingSaves((n) => n + 1)
+    beginSaving()
     drainQueue()
     return true
   }
@@ -153,7 +221,13 @@ export function CapacityGrid() {
       })
       .finally(() => {
         savingRef.current = false
-        setPendingSaves((n) => Math.max(0, n - 1))
+        setPendingSaves((n) => {
+          const next = Math.max(0, n - 1)
+          // Only stop the indicator once nothing is left in the queue. A queued
+          // edit arriving during this save should not make it flicker off.
+          if (next === 0) endSaving()
+          return next
+        })
         // A queued edit may have arrived while this one was in flight.
         drainQueue()
       })
@@ -191,7 +265,7 @@ export function CapacityGrid() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        {pendingSaves > 0 && (
+        {showSaving && (
           <span className="saving" role="status" aria-live="polite">
             Saving…
           </span>

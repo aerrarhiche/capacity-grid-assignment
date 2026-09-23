@@ -434,6 +434,22 @@ describe('failure handling', () => {
     })
   })
 
+  it('does not flash the saving indicator for a fast save', async () => {
+    // A save that finishes before the delay should show nothing at all, so the
+    // indicator never blinks.
+    const { user } = await renderGrid()
+
+    await user.click(capacityButton('Ana Ferreira'))
+    const input = screen.getByLabelText('Weekly hours for Ana Ferreira')
+    await user.clear(input)
+    await user.type(input, '50{Enter}')
+
+    await waitFor(() => {
+      expect(capacityButton('Ana Ferreira')).toHaveTextContent('50h/wk')
+    })
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
   it('shows a saving indicator while a save is in flight', async () => {
     let releaseSave: (() => void) | undefined
     const { user } = await renderGrid({
@@ -451,16 +467,21 @@ describe('failure handling', () => {
     await user.clear(input)
     await user.type(input, '50{Enter}')
 
-    // While the request is open, the grid says so.
-    expect(await screen.findByRole('status')).toHaveTextContent(/Saving/i)
+    // It appears once the save has been running for longer than the delay.
+    await waitFor(() => expect(releaseSave).toBeDefined())
+    expect(await screen.findByRole('status', {}, { timeout: 2000 })).toHaveTextContent(/Saving/i)
 
     await waitFor(() => expect(releaseSave).toBeDefined())
     releaseSave?.()
 
-    // And it goes away once the save lands.
-    await waitFor(() => {
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
-    })
+    // The indicator stays for at least the minimum visible time, so it clears a
+    // little after the save itself has landed.
+    await waitFor(
+      () => {
+        expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      },
+      { timeout: 3000 },
+    )
   })
 
   it('keeps the saving indicator up while a queued save is still waiting', async () => {
@@ -490,16 +511,17 @@ describe('failure handling', () => {
     await user.clear(input)
     await user.type(input, '35{Enter}')
 
-    // Two saves are outstanding, so the indicator is still showing.
-    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(await screen.findByRole('status', {}, { timeout: 2000 })).toBeInTheDocument()
 
     await waitFor(() => expect(releaseFirst).toBeDefined())
     releaseFirst?.()
 
-    // Both finish, so it clears.
-    await waitFor(() => {
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      },
+      { timeout: 3000 },
+    )
   })
 
   it('shows an error and no grid when the range request fails', async () => {
