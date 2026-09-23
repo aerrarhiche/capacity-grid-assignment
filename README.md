@@ -49,9 +49,13 @@ Both sides have tests. With the stack running:
 # Go: week calculation, the range cap, the query invariants, PATCH validation
 docker compose run --rm --no-deps -v "$(pwd)/api:/src" -w /src api go test ./...
 
-# Frontend: the grid, editing, and the failure paths
+# Frontend: helpers, the grid, and the failure paths
 docker compose exec -T web npx vitest run
 ```
+
+There are 70 frontend tests. `web/src/capacity.test.ts` covers the pure helpers, and
+`web/src/CapacityGrid.test.tsx` drives the rendered grid, including editing, queued saves,
+and the error states.
 
 ## What to build
 

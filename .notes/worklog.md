@@ -34,9 +34,10 @@ path. This section records what they found and what I changed.
   flight. 61 tests in total.
 - Pulled the pure helpers out of the component into `web/src/capacity.ts` so they can be
   tested without rendering.
-
-Still not done, and worth naming: the save queue gives no visual sign that a save is waiting
-for one already in flight.
+- Added a saving indicator in the toolbar (`role="status"`, politely announced) so a slow
+  save is visible instead of silent, with a reduced-motion variant.
+- Added `web/src/App.test.tsx` for the page shell, and tests for the date input edges in the
+  grid: an inverted range, correcting it, and a single day range. 70 tests in total.
 
 ## Phase 4 (final pass)
 
