@@ -40,6 +40,10 @@ export function CapacityGrid() {
   const [editing, setEditing] = useState<PendingEdit | null>(null)
   const [query, setQuery] = useState('')
 
+  // Counts saves that have been queued but not finished. Drives the saving
+  // indicator, so a slow save is visible instead of silent.
+  const [pendingSaves, setPendingSaves] = useState(0)
+
   const cancelledRef = useRef(false)
 
   // Saves run one at a time. A second edit made while a save is still in flight
@@ -106,6 +110,7 @@ export function CapacityGrid() {
 
     setError(null)
     queueRef.current.push({ id, hours })
+    setPendingSaves((n) => n + 1)
     drainQueue()
     return true
   }
@@ -148,6 +153,7 @@ export function CapacityGrid() {
       })
       .finally(() => {
         savingRef.current = false
+        setPendingSaves((n) => Math.max(0, n - 1))
         // A queued edit may have arrived while this one was in flight.
         drainQueue()
       })
@@ -185,6 +191,11 @@ export function CapacityGrid() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        {pendingSaves > 0 && (
+          <span className="saving" role="status" aria-live="polite">
+            Saving…
+          </span>
+        )}
         {data && (
           <span className="summary">
             <strong>{overCount}</strong> {overCount === 1 ? 'person' : 'people'} over-allocated

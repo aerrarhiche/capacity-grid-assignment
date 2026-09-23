@@ -175,6 +175,41 @@ describe('week navigation and range', () => {
     // An inverted range must not leave a table on screen.
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
+
+  it('recovers once an inverted range is corrected', async () => {
+    const { user } = await renderGrid()
+
+    const from = screen.getByLabelText('From')
+    await user.clear(from)
+    await user.type(from, '2026-02-01')
+    expect(await screen.findByText(/From must be on or before To/i)).toBeInTheDocument()
+
+    await user.clear(from)
+    await user.type(from, '2025-12-29')
+
+    await waitFor(() => {
+      expect(screen.getByRole('table')).toBeInTheDocument()
+    })
+    expect(screen.queryByText(/From must be on or before To/i)).not.toBeInTheDocument()
+  })
+
+  it('accepts a range that starts and ends on the same day', async () => {
+    const { user } = await renderGrid()
+
+    const to = screen.getByLabelText('To')
+    await user.clear(to)
+    await user.type(to, '2025-12-29')
+
+    await waitFor(() => {
+      expect(screen.getByRole('table')).toBeInTheDocument()
+    })
+    expect(screen.queryByText(/From must be on or before To/i)).not.toBeInTheDocument()
+  })
+
+  it('does not leave a loading message up after the grid arrives', async () => {
+    await renderGrid()
+    expect(screen.queryByText(/Loading/i)).not.toBeInTheDocument()
+  })
 })
 
 describe('search', () => {
@@ -396,6 +431,74 @@ describe('failure handling', () => {
 
     await waitFor(() => {
       expect(patched).toEqual([50, 35])
+    })
+  })
+
+  it('shows a saving indicator while a save is in flight', async () => {
+    let releaseSave: (() => void) | undefined
+    const { user } = await renderGrid({
+      patch: (url, init) => {
+        const id = Number(url.split('/').pop())
+        const body = JSON.parse(String(init?.body ?? '{}')) as { weeklyHours: number }
+        return new Promise<Response>((resolve) => {
+          releaseSave = () => resolve(jsonResponse({ id, name: 'Ana Ferreira', weeklyHours: body.weeklyHours }))
+        })
+      },
+    })
+
+    await user.click(capacityButton('Ana Ferreira'))
+    const input = screen.getByLabelText('Weekly hours for Ana Ferreira')
+    await user.clear(input)
+    await user.type(input, '50{Enter}')
+
+    // While the request is open, the grid says so.
+    expect(await screen.findByRole('status')).toHaveTextContent(/Saving/i)
+
+    await waitFor(() => expect(releaseSave).toBeDefined())
+    releaseSave?.()
+
+    // And it goes away once the save lands.
+    await waitFor(() => {
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+  })
+
+  it('keeps the saving indicator up while a queued save is still waiting', async () => {
+    let releaseFirst: (() => void) | undefined
+    let calls = 0
+    const { user } = await renderGrid({
+      patch: (url, init) => {
+        calls += 1
+        const id = Number(url.split('/').pop())
+        const body = JSON.parse(String(init?.body ?? '{}')) as { weeklyHours: number }
+        if (calls === 1) {
+          return new Promise<Response>((resolve) => {
+            releaseFirst = () => resolve(jsonResponse({ id, name: 'Ana Ferreira', weeklyHours: body.weeklyHours }))
+          })
+        }
+        return jsonResponse({ id, name: 'Bo Lindqvist', weeklyHours: body.weeklyHours })
+      },
+    })
+
+    await user.click(capacityButton('Ana Ferreira'))
+    let input = screen.getByLabelText('Weekly hours for Ana Ferreira')
+    await user.clear(input)
+    await user.type(input, '50{Enter}')
+
+    await user.click(capacityButton('Bo Lindqvist'))
+    input = screen.getByLabelText('Weekly hours for Bo Lindqvist')
+    await user.clear(input)
+    await user.type(input, '35{Enter}')
+
+    // Two saves are outstanding, so the indicator is still showing.
+    expect(screen.getByRole('status')).toBeInTheDocument()
+
+    await waitFor(() => expect(releaseFirst).toBeDefined())
+    releaseFirst?.()
+
+    // Both finish, so it clears.
+    await waitFor(() => {
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
     })
   })
 

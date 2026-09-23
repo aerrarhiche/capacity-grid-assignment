@@ -140,6 +140,40 @@ body {
   color: var(--text-muted);
 }
 
+.saving {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.saving::before {
+  content: '';
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: saving-pulse 1s ease-in-out infinite;
+}
+
+@keyframes saving-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saving::before {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
 .summary strong {
   color: var(--danger);
   font-weight: 600;
