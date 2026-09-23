@@ -19,6 +19,12 @@ type PendingEdit = {
   value: string
 }
 
+// A save that is waiting to be sent, or one already in flight.
+type SaveJob = {
+  id: number
+  hours: number
+}
+
 // A window that shows the hand-crafted edge cases (partial weeks, weekend
 // straddling, a zero-capacity person) and some over-allocation.
 const DEFAULT_FROM = '2025-12-29'
@@ -51,6 +57,11 @@ export function CapacityGrid() {
   const [query, setQuery] = useState('')
 
   const cancelledRef = useRef(false)
+
+  // Saves run one at a time. A second edit made while a save is still in flight
+  // is queued here instead of being dropped, so a fast manager never loses a
+  // change silently.
+  const queueRef = useRef<SaveJob[]>([])
   const savingRef = useRef(false)
 
   const invalidRange = from > to
@@ -80,6 +91,9 @@ export function CapacityGrid() {
       .catch((err: unknown) => {
         if (controller.signal.aborted) return
         setError(err instanceof Error ? err.message : String(err))
+        // Drop the previous grid so the new dates are never shown above stale
+        // numbers. An error for the new range, and no old data beside it.
+        setData(null)
         setLoading(false)
       })
 
@@ -96,22 +110,34 @@ export function CapacityGrid() {
     setEditing({ id: p.id, value: String(p.weeklyHours) })
   }
 
-  const saveEdit = (id: number, value: string) => {
-    if (savingRef.current) return
+  // saveEdit validates the typed value and hands it to the queue. It returns
+  // whether the edit was accepted, so the caller can decide what to do with the
+  // editor.
+  const saveEdit = (id: number, value: string): boolean => {
     const val = Number(value)
     if (value.trim() === '' || !Number.isFinite(val) || val < 0) {
       setError('Weekly hours must be a non-negative number.')
-      setEditing(null)
-      return
+      return false
     }
 
-    savingRef.current = true
-    setEditing(null)
+    queueRef.current.push({ id, hours: val })
+    drainQueue()
+    return true
+  }
 
-    fetch(`/api/people/${id}`, {
+  // drainQueue sends queued saves one at a time. Each save clears any previous
+  // error when it succeeds, so a stale banner never outlives the problem.
+  const drainQueue = () => {
+    if (savingRef.current) return
+    const job = queueRef.current.shift()
+    if (!job) return
+
+    savingRef.current = true
+
+    fetch(`/api/people/${job.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ weeklyHours: val }),
+      body: JSON.stringify({ weeklyHours: job.hours }),
     })
       .then((res) => {
         if (!res.ok) {
@@ -120,6 +146,7 @@ export function CapacityGrid() {
         return res.json() as Promise<{ id: number; weeklyHours: number }>
       })
       .then((updated) => {
+        setError(null)
         setData((d) =>
           d
             ? {
@@ -136,6 +163,8 @@ export function CapacityGrid() {
       })
       .finally(() => {
         savingRef.current = false
+        // A queued edit may have arrived while this one was in flight.
+        drainQueue()
       })
   }
 
@@ -191,6 +220,9 @@ export function CapacityGrid() {
       {data && !loading && (
         <div className="table-scroll">
           <table>
+            <caption className="visually-hidden">
+              Allocated hours and capacity per person, for each week in the selected range.
+            </caption>
             <thead>
               <tr>
                 <th className="person-col">Person</th>
@@ -215,12 +247,13 @@ export function CapacityGrid() {
                           step="any"
                           autoFocus
                           className="capacity-input"
+                          aria-label={`Weekly hours for ${p.name}`}
                           value={editValue}
                           onChange={(e) => setEditing({ id: p.id, value: e.target.value })}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault()
-                              saveEdit(p.id, editValue)
+                              if (saveEdit(p.id, editValue)) setEditing(null)
                             } else if (e.key === 'Escape') {
                               cancelledRef.current = true
                               setEditing(null)
@@ -231,7 +264,7 @@ export function CapacityGrid() {
                               cancelledRef.current = false
                               return
                             }
-                            saveEdit(p.id, editValue)
+                            if (saveEdit(p.id, editValue)) setEditing(null)
                           }}
                         />
                       ) : (
