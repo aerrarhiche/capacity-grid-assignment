@@ -7,6 +7,11 @@ import (
 
 const dateLayout = "2006-01-02"
 
+// maxRangeDays caps how wide a range the endpoint will answer. The grid renders
+// one column per week, one row per person, so a very wide range means a very
+// large response and a table the browser struggles to draw. Roughly two years.
+const maxRangeDays = 730
+
 // allocationQuery returns, per person and per week, the hours allocated across
 // assignments. Weeks are Monday-based (ISO). Only working days (Mon-Fri) count
 // toward allocation, so an assignment that starts or ends mid week, or spans a
@@ -75,6 +80,10 @@ func (s *server) handleCapacity(w http.ResponseWriter, r *http.Request) {
 	}
 	if to.Before(from) {
 		http.Error(w, "to must not be before from", http.StatusBadRequest)
+		return
+	}
+	if !rangeAllowed(from, to) {
+		http.Error(w, "range must not be wider than 730 days", http.StatusBadRequest)
 		return
 	}
 
@@ -150,6 +159,12 @@ func (s *server) loadPeople(r *http.Request) ([]capacityPerson, error) {
 		people = append(people, p)
 	}
 	return people, rows.Err()
+}
+
+// rangeAllowed reports whether a range is one we will answer. It must start on
+// or before the end, and it must not be wider than maxRangeDays.
+func rangeAllowed(from, to time.Time) bool {
+	return !to.Before(from) && to.Sub(from) <= maxRangeDays*24*time.Hour
 }
 
 // weekStarts returns the Monday of every week that falls at least partly in
